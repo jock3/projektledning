@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY,
-);
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+const supabase: SupabaseClient | null =
+  supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 export interface PipelineStep {
   key:  string;
@@ -55,6 +56,11 @@ export function useDashboard(projectKey: string) {
 
   useEffect(() => {
     async function load() {
+      if (!supabase) {
+        setError("VITE_SUPABASE_URL och VITE_SUPABASE_ANON_KEY saknas i .env.local");
+        setLoading(false);
+        return;
+      }
       const { data: row, error: err } = await supabase
         .from("dashboard_cache")
         .select("data, updated_at")
@@ -71,6 +77,8 @@ export function useDashboard(projectKey: string) {
     }
 
     load();
+
+    if (!supabase) return;
 
     const channel = supabase
       .channel(`dashboard:${projectKey}`)

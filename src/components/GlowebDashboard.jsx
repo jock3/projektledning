@@ -42,10 +42,40 @@ const label = {
   marginBottom:  14,
 };
 
+const centerWrap = {
+  background: C.bg, minHeight: "100vh", display: "flex", flexDirection: "column",
+  alignItems: "center", justifyContent: "center", fontFamily: SANS, gap: 12, padding: 32,
+};
+
 function LoadingState() {
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
+    <div style={centerWrap}>
       <span style={{ color: C.muted, fontSize: 13, letterSpacing: "0.05em" }}>Laddar dashboard…</span>
+    </div>
+  );
+}
+
+function ErrorState({ message }) {
+  return (
+    <div style={centerWrap}>
+      <span style={{ fontFamily: MONO, fontSize: 11, color: C.red, textAlign: "center", maxWidth: 480 }}>
+        {message}
+      </span>
+    </div>
+  );
+}
+
+function NoDataState() {
+  return (
+    <div style={centerWrap}>
+      <span style={{ fontFamily: SANS, fontSize: 14, color: C.muted }}>Ingen data ännu</span>
+      <span style={{ fontFamily: MONO, fontSize: 11, color: C.faint, textAlign: "center", maxWidth: 480 }}>
+        Kör Edge Function för att fylla dashboarden:
+      </span>
+      <pre style={{ fontFamily: MONO, fontSize: 11, color: C.faint, background: C.panel, padding: "10px 16px", borderRadius: 6, border: `1px solid ${C.line}` }}>
+{`curl -X POST https://<ref>.supabase.co/functions/v1/sync-dashboard \\
+  -H "Authorization: Bearer <service-role-key>"`}
+      </pre>
     </div>
   );
 }
@@ -192,9 +222,11 @@ function Hours({ hours }) {
 }
 
 export default function GlowebDashboard() {
-  const { data, loading, updatedAt } = useDashboard("GLOWEB");
+  const { data, loading, error, updatedAt } = useDashboard("GLOWEB");
 
-  if (loading || !data) return <LoadingState />;
+  if (loading)  return <LoadingState />;
+  if (error)    return <ErrorState message={error} />;
+  if (!data)    return <NoDataState />;
 
   const donePct = data.total > 0 ? Math.round((data.klartEllerRedo / data.total) * 100) : 0;
   const ts = updatedAt
